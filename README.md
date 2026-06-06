@@ -1,9 +1,9 @@
 # Manual Profesional y Didactico de Instalacion de Arch Linux + KDE Plasma en Dual Boot con Windows
 
-Version: 1.0 (Borrador tecnico para convertir a PDF)
+Version: 1.1 (Edicion enfocada en live ISO + validadores)
 Fecha: 2026-06-06
 Nivel: Desde principiante guiado hasta instalacion manual avanzada
-Objetivo: proceso detallado, verificable y con mitigacion de errores para instalar Arch Linux junto a Windows.
+Objetivo: proceso detallado, verificable y con mitigacion de errores para instalar Arch Linux junto a Windows, partiendo desde la terminal live de la ISO con particiones ya preparadas.
 
 ---
 
@@ -15,8 +15,8 @@ Objetivo: proceso detallado, verificable y con mitigacion de errores para instal
 4. [Arquitectura objetivo del sistema](#4-arquitectura-objetivo-del-sistema)
 5. [Glosario tecnico rapido](#5-glosario-tecnico-rapido)
 6. [Checklist maestro previo](#6-checklist-maestro-previo)
-7. [Fase A - Preparacion en Windows](#7-fase-a---preparacion-en-windows)
-8. [Fase B - Preparacion de firmware UEFI/BIOS](#8-fase-b---preparacion-de-firmware-uefibios)
+7. [Precondiciones de esta edicion (ya resueltas fuera de este manual)](#7-precondiciones-de-esta-edicion-ya-resueltas-fuera-de-este-manual)
+8. [Matriz de particiones asumida](#8-matriz-de-particiones-asumida)
 9. [Fase C - Arranque de la ISO y validaciones iniciales](#9-fase-c---arranque-de-la-iso-y-validaciones-iniciales)
 10. [Ruta 1: Instalacion con archinstall](#10-ruta-1-instalacion-con-archinstall)
 11. [Ruta 2: Instalacion manual completa](#11-ruta-2-instalacion-manual-completa)
@@ -53,6 +53,8 @@ Este manual asume que:
 - Tu equipo ya tiene Windows funcional.
 - Quieres dual boot real, no maquina virtual.
 - Estaras en modo UEFI y tabla de particiones GPT.
+- Ya arrancaste la ISO de Arch y estas en la terminal negra (live environment).
+- Ya tienes particiones creadas en Windows/espacio libre (este manual no cubre ese paso).
 - Sabes seguir comandos con disciplina (copiar/pegar con validacion, no a ciegas).
 
 Fuera de alcance en esta version:
@@ -125,70 +127,44 @@ Marca todo antes de iniciar:
 
 - [ ] Backup de archivos criticos (nube y/o disco externo).
 - [ ] Clave de recuperacion BitLocker guardada.
-- [ ] ISO oficial de Arch descargada.
-- [ ] USB booteable creada correctamente (UEFI/GPT).
-- [ ] Espacio no asignado en disco para Arch.
-- [ ] Confirmado arranque Windows en modo UEFI.
+- [ ] ISO oficial de Arch ya booteada en modo UEFI.
+- [ ] Ya estas en la terminal live de Arch.
+- [ ] Particion EFI de Windows existe y esta intacta.
+- [ ] Particiones Linux ya creadas (root/swap/home o root/swap).
 - [ ] Tiempo disponible sin interrupciones.
 
 Si alguno esta en no, no empieces aun.
 
 ---
 
-## 7) Fase A - Preparacion en Windows
+## 7) Precondiciones de esta edicion (ya resueltas fuera de este manual)
 
-### A.1 Reducir particion de Windows
+Esta version del manual comienza cuando ya estas en la terminal live de Arch Linux.
 
-1. Abre Administracion de discos:
-   - `Win + X` -> Administracion de discos.
-2. Clic derecho sobre C: -> Reducir volumen.
-3. Liberar espacio recomendado:
-   - Minimo funcional: 40 GB.
-   - Recomendado para uso comodo: 80-150 GB.
-4. Deja el espacio como "No asignado".
+Se asume que ya hiciste fuera de este documento:
 
-Validacion:
+- Particionado inicial desde Windows (o equivalente).
+- Creacion de USB booteable.
+- Arranque UEFI correcto desde la ISO.
 
-- Debes ver una region "No asignado" en negro.
-- No crear volumen nuevo en Windows.
-
-### A.2 Confirmar UEFI
-
-1. `Win + R` -> `msinfo32`.
-2. Revisar "Modo de BIOS": debe indicar `UEFI`.
-
-### A.3 Preparar Fast Startup y BitLocker
-
-Recomendado para evitar conflictos de montaje NTFS:
-
-- Desactivar inicio rapido de Windows (Power Options).
-- Suspender o desactivar BitLocker durante instalacion.
-
-### A.4 Crear USB booteable
-
-Opciones:
-
-- Rufus (modo GPT + UEFI).
-- Ventoy.
-
-Validacion:
-
-- La BIOS detecta la USB como entrada UEFI.
+Si aun no cumpliste algo de lo anterior, detente y completa esos pasos primero.
 
 ---
 
-## 8) Fase B - Preparacion de firmware UEFI/BIOS
+## 8) Matriz de particiones asumida
 
-Entrar a BIOS/UEFI y revisar:
+Este manual usa una matriz de particiones ya creada. Ajusta los nombres a tu equipo.
 
-- Secure Boot: Off (temporal para simplificar).
-- Fast Boot: Off (temporal).
-- Boot mode: UEFI (no Legacy/CSM).
-- Orden de arranque: USB primero.
+Ejemplo de referencia:
 
-Nota formal:
+- EFI de Windows (existente): `/dev/nvme0n1p1` (FAT32)
+- Root Linux: `/dev/nvme0n1p5`
+- Swap Linux: `/dev/nvme0n1p6`
+- Home Linux (opcional): `/dev/nvme0n1p7`
 
-- Luego de un sistema estable puedes re-evaluar Secure Boot con configuracion avanzada.
+Regla critica:
+
+- No formatear ni borrar la EFI de Windows.
 
 ---
 
@@ -262,7 +238,7 @@ archinstall
 3. Disk configuration
 
 - Usa modo de particionado manual dentro del instalador.
-- Selecciona solo espacio libre.
+- Selecciona particiones Linux ya creadas para root/swap/(home).
 - Reusa particion EFI existente de Windows (no formatear).
 
 4. Filesystem
@@ -332,7 +308,7 @@ Esta ruta es la mas didactica y profesional para entender Arch de verdad.
 ### 11.0 Mapa de trabajo
 
 1. Identificar dispositivos.
-2. Crear particiones Linux nuevas.
+2. Validar particiones Linux ya creadas.
 3. Formatear particiones Linux.
 4. Montar raiz/home/efi.
 5. Instalar base con `pacstrap`.
@@ -353,7 +329,7 @@ Como leer salida:
 
 - Busca disco principal (`nvme0n1` o `sda`).
 - Identifica EFI de Windows (FAT32, pequena, tipo EFI System).
-- Ubica espacio libre para nuevas particiones Linux.
+- Identifica particiones Linux ya creadas para root/swap/(home).
 
 Punto de control obligatorio:
 
@@ -362,47 +338,63 @@ Punto de control obligatorio:
   - EFI Windows.
   - IDs de nuevas particiones Linux.
 
-### 11.2 Crear particiones Linux
+### 11.2 Validar particiones ya creadas (bloque robusto)
 
-Herramienta amigable en consola:
+Define variables primero para evitar errores por copiar/pegar:
 
 ```bash
-cfdisk /dev/nvme0n1
+DISK="/dev/nvme0n1"
+EFI_PART="/dev/nvme0n1p1"
+ROOT_PART="/dev/nvme0n1p5"
+SWAP_PART="/dev/nvme0n1p6"
+HOME_PART="/dev/nvme0n1p7"   # opcional; deja vacio si no usaras /home separado
 ```
 
-Ejemplo de diseno:
+Valida que cada ruta exista:
 
-- Root (`/`): 60G
-- Swap: 8G
-- Home (`/home`): resto
+```bash
+for p in "$EFI_PART" "$ROOT_PART" "$SWAP_PART"; do
+  [ -b "$p" ] && echo "OK existe: $p" || { echo "ERROR no existe: $p"; exit 1; }
+done
+```
 
-Tipos:
+Valida tabla y tipos detectados:
 
-- Root/Home: Linux filesystem
-- Swap: Linux swap
+```bash
+lsblk -o NAME,SIZE,FSTYPE,PARTTYPE,TYPE,MOUNTPOINT "$DISK"
+blkid "$EFI_PART" "$ROOT_PART" "$SWAP_PART" "$HOME_PART" 2>/dev/null || true
+```
+
+Que revisar manualmente antes de seguir:
+
+- `EFI_PART` corresponde a la EFI existente de Windows (FAT32).
+- `ROOT_PART` y `SWAP_PART` apuntan a particiones Linux correctas.
+- `HOME_PART` solo si realmente existe.
 
 Regla critica:
 
-- No tocar particiones de Windows.
-- No borrar EFI de Windows.
+- Si hay duda en nombres de particion, no ejecutes `mkfs` todavia.
 
 ### 11.3 Formatear particiones Linux
 
-Ejemplo (ajusta segun tu caso real):
+Usa variables para reducir riesgo:
 
 ```bash
-mkfs.ext4 /dev/nvme0n1p5
-mkswap /dev/nvme0n1p6
-mkfs.ext4 /dev/nvme0n1p7
-swapon /dev/nvme0n1p6
+mkfs.ext4 "$ROOT_PART"
+mkswap "$SWAP_PART"
+swapon "$SWAP_PART"
+
+if [ -n "${HOME_PART:-}" ] && [ -b "$HOME_PART" ]; then
+  mkfs.ext4 "$HOME_PART"
+fi
 ```
 
 Explicacion:
 
-- `mkfs.ext4 ...p5`: crea filesystem root.
-- `mkswap ...p6`: inicializa swap.
-- `mkfs.ext4 ...p7`: crea filesystem home.
-- `swapon ...p6`: activa swap en entorno live.
+- `mkfs.ext4 "$ROOT_PART"`: crea filesystem root.
+- `mkswap "$SWAP_PART"`: inicializa swap.
+- `swapon "$SWAP_PART"`: activa swap en entorno live.
+- Bloque `if`: formatea `/home` solo si esa particion realmente existe.
 
 Validacion:
 
@@ -414,11 +406,15 @@ swapon --show
 ### 11.4 Montar estructura del nuevo sistema
 
 ```bash
-mount /dev/nvme0n1p5 /mnt
-mkdir -p /mnt/home
-mount /dev/nvme0n1p7 /mnt/home
+mount "$ROOT_PART" /mnt
+
+if [ -n "${HOME_PART:-}" ] && [ -b "$HOME_PART" ]; then
+  mkdir -p /mnt/home
+  mount "$HOME_PART" /mnt/home
+fi
+
 mkdir -p /mnt/boot/efi
-mount /dev/nvme0n1p1 /mnt/boot/efi
+mount "$EFI_PART" /mnt/boot/efi
 ```
 
 Explicacion:
